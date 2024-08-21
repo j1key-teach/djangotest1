@@ -1,9 +1,9 @@
 from django.urls import path
-
-from login.views import RegisterView, LoginView, LogoutView
+from .views import RegisterView, LoginView, UpgradeStageView, PromocodeCreateView
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
     path('login/', LoginView.as_view(), name='login'),
-    path('logout/', LogoutView.as_view(), name='logout'),
+    path('upgrade-stage/', UpgradeStageView.as_view(), name='upgrade-stage'),
+    path('create-promocode/', PromocodeCreateView.as_view(), name='create-promocode'),
 ]

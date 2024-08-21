@@ -1,13 +1,9 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import TestViewSet, BolimViewSet, UserTestAttemptViewSet
-
-router = DefaultRouter()
-
-router.register(r'bolim', BolimViewSet)
-router.register(r'user-test-attempts', UserTestAttemptViewSet)
+from django.urls import path
+from .views import TestList, BolimList, BolimDetail
 
 urlpatterns = [
-    path('', include(router.urls)),
-    path('tests/', TestViewSet.as_view(), ),
+    path('tests/', TestList.as_view(), name='test-list'),
+    path('bolim/', BolimList.as_view(), name='bolim-list'),
+    path('api/bolims/<int:pk>/', BolimDetail.as_view(), name='bolim-detail-api'),
+
 ]

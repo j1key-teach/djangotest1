@@ -1,12 +1,13 @@
-from django.shortcuts import render
-from django.contrib.auth.models import User
+from django.utils import timezone
+
+from .models import User, Promocode
 from django.contrib.auth import authenticate, login, logout
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import UserSerializer, LoginSerializer
-from rest_framework import viewsets, permissions
+from .serializers import UserSerializer, LoginSerializer, PromocodeCreateSerializer
+from rest_framework import  permissions
 
 
 # Create your views here.
@@ -37,9 +38,36 @@ class LoginView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class LogoutView(APIView):
-    permission_classes = (permissions.IsAuthenticated,)
+class UpgradeStageView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request, *args, **kwargs):
-        logout(request)
-        return Response({"detail": "Successfully logged out"}, status=status.HTTP_200_OK)
+    def post(self, request):
+        user = request.user
+        promocode = request.data.get('promocode')
+
+        if not promocode:
+            return Response({"detail": "Promocode is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            promo = Promocode.objects.get(code=promocode)
+        except Promocode.DoesNotExist:
+            return Response({"detail": "Invalid Promocode"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not promo.is_valid():
+            return Response({"detail": "Promocode is not valid or expired"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if the user has already used this promocode
+        if user in promo.used_by.all():
+            return Response({"detail": "You have already used this Promocode"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # If everything is fine, upgrade the user's stage
+        user.upgrade_stage()
+        promo.used_by.add(user)
+
+        return Response({'stage': user.stage})
+
+
+class PromocodeCreateView(generics.CreateAPIView):
+    queryset = Promocode.objects.all()
+    serializer_class = PromocodeCreateSerializer
+    permission_classes = [permissions.IsAdminUser]

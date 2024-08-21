@@ -1,22 +1,22 @@
 from rest_framework import serializers
-from .models import Test, Bolim, UserTestAttempt
+from .models import Test, Bolim, BolimTest
 
 
 class TestSerializer(serializers.ModelSerializer):
     class Meta:
         model = Test
-        fields = ['id', 'question', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_option']
+        fields = '__all__'
 
 
 class BolimSerializer(serializers.ModelSerializer):
-    tests = TestSerializer(many=True)
+    tests = TestSerializer(many=True, read_only=True)
 
     class Meta:
         model = Bolim
-        fields = ['id', 'title', 'tests']
+        fields = '__all__'
 
 
-class UserTestAttemptSerializer(serializers.ModelSerializer):
+class BolimTestSerializer(serializers.ModelSerializer):
     class Meta:
-        model = UserTestAttempt
-        fields = ['id', 'user', 'test', 'attempt_count', 'is_completed', 'error_count']
+        model = BolimTest
+        fields = '__all__'

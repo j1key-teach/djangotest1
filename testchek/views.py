@@ -1,41 +1,45 @@
-from rest_framework import viewsets, generics
-from .models import Test, Bolim, UserTestAttempt
-from .serializers import TestSerializer, BolimSerializer, UserTestAttemptSerializer
-from rest_framework import permissions
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
+from .models import Test, Bolim
+from .serializers import TestSerializer, BolimSerializer
+from rest_framework import generics
 
 
-class TestViewSet(generics.ListCreateAPIView):
-    queryset = Test.objects.all()
-    serializer_class = TestSerializer
-    permission_classes = [permissions.IsAuthenticated]
+class TestList(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        tests = Test.objects.all()
+        serializer = TestSerializer(tests, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = TestSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class BolimViewSet(viewsets.ModelViewSet):
+class BolimList(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        bolims = Bolim.objects.all()
+        serializer = BolimSerializer(bolims, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = BolimSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class BolimDetail(generics.RetrieveAPIView):
+    permission_classes = [IsAuthenticated]
     queryset = Bolim.objects.all()
     serializer_class = BolimSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-
-class UserTestAttemptViewSet(viewsets.ModelViewSet):
-    queryset = UserTestAttempt.objects.all()
-    serializer_class = UserTestAttemptSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def create(self, request, *args, **kwargs):
-        user = request.user
-        bolim_id = request.data.get('bolim')
-        bolim = Test.objects.get(id=bolim_id)
-
-        attempt, created = UserTestAttempt.objects.get_or_create(user=user, bolim=bolim)
-
-        if not created:
-            if attempt.attempt_count >= 2:
-                return Response({"error": "siz allaqachon 2marta urunib ko'rgnsiz"}, status=400)
-            if attempt.error_count >= 3:
-                return Response({"error": "3tadan ko'p xato qildingiz shuning uchun ham keyingi bosqicha o'tmaysiz."},
-                                status=400)
-
-        attempt.attempt_count += 1
-        attempt.save()
-        return super().create(request, *args, **kwargs)
